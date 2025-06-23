@@ -1,88 +1,67 @@
-body {
-  font-family: sans-serif;
-  background: #f4f4f4;
-  display: flex;
-  justify-content: center;
-  margin-top: 50px;
-}
-
-.chat-container {
-  background: white;
-  padding: 20px;
-  border-radius: 15px;
-  width: 400px;
-  box-shadow: 0 0 10px gray;
-}
-
-#chat-box {
-  border: 1px solid #ccc;
-  height: 300px;
-  overflow-y: scroll;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-
-.timestamp {
-  font-size: 0.8em;
-  color: gray;
-}
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Chat</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat App</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
 </head>
 <body>
   <div class="chat-container">
-    <h2>🔥 Chat Room</h2>
-    <div id="chat-box"></div>
-    <div id="typing-status"></div>
-    <input type="text" id="username" placeholder="Your name">
-    <input type="text" id="message" placeholder="Message">
-    <button onclick="sendMessage()">Send</button>
+    <div class="chat-header">
+      <h2>💬 Chat Room</h2>
+      <p id="typing-status"></p>
+    </div>
+    <div class="chat-box" id="chat-box"></div>
+
+    <div class="input-container">
+      <input type="text" id="username" placeholder="Username" required />
+      <input type="text" id="message" placeholder="Type a message..." autocomplete="off" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
   </div>
 
   <script>
     const socket = io();
+    const messageInput = document.getElementById("message");
     const chatBox = document.getElementById("chat-box");
     const typingStatus = document.getElementById("typing-status");
 
-    socket.on("load_messages", data => {
-      data.forEach(msg => appendMessage(msg));
+    messageInput.addEventListener("input", () => {
+      const user = document.getElementById("username").value;
+      socket.emit("typing", user);
     });
 
-    socket.on("receive_message", msg => {
-      appendMessage(msg);
+    socket.on("receive_message", (data) => {
+      const msg = document.createElement("div");
+      msg.className = data.username === document.getElementById("username").value ? "message sent" : "message received";
+      msg.innerHTML = `
+        <p class="user">${data.username}:</p>
+        <p>${data.message}</p>
+        <span class="time">${data.time}</span>
+      `;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
     });
 
-    socket.on("show_typing", username => {
-      typingStatus.innerText = `${username} is typing...`;
-      setTimeout(() => typingStatus.innerText = "", 2000);
+    socket.on("user_typing", (username) => {
+      typingStatus.textContent = `${username} is typing...`;
+      setTimeout(() => {
+        typingStatus.textContent = "";
+      }, 2000);
     });
 
     function sendMessage() {
-      const username = document.getElementById("username").value.trim();
-      const message = document.getElementById("message").value.trim();
+      const username = document.getElementById("username").value;
+      const message = messageInput.value;
       if (username && message) {
-        socket.emit("new_message", { username, message });
-        document.getElementById("message").value = "";
+        socket.emit("send_message", {
+          username,
+          message,
+        });
+        messageInput.value = "";
       }
-    }
-
-    document.getElementById("message").addEventListener("input", () => {
-      const username = document.getElementById("username").value.trim();
-      if (username) {
-        socket.emit("typing", username);
-      }
-    });
-
-    function appendMessage({ username, message, timestamp }) {
-      const div = document.createElement("div");
-      div.innerHTML = `<b>${username}</b>: ${message} <span class="timestamp">[${timestamp}]</span>`;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
     }
   </script>
 </body>
