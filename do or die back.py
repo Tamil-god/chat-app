@@ -4,6 +4,7 @@ import json, os
 from datetime import datetime
 from datetime import datetime
 from pytz import timezone
+india_time = datetime.now(timezone("Asia/Kolkata")).strftime('%I:%M %p')
 
 app = Flask(__name__)
 app.secret_key = 'do-or-die-secret-key'
