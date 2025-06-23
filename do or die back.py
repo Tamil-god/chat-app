@@ -4,9 +4,11 @@ import json, os
 from datetime import datetime
 from datetime import datetime
 from pytz import timezone
-india_time = datetime.now(timezone("Asia/Kolkata")).strftime('%I:%M %p')
 from flask_sqlalchemy import SQLAlchemy
 from models import db, Message
+import sqlite3
+india_time = datetime.now(timezone("Asia/Kolkata")).strftime('%I:%M %p')
+
 
 app = Flask(__name__)
 app.secret_key = 'do-or-die-secret-key'
