@@ -4,6 +4,12 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from pytz import timezone
 import json, os
+from app import db, Message
+
+# Print all messages in the database
+messages = Message.query.all()
+for msg in messages:
+    print(f"{msg.username} ({msg.timestamp}): {msg.text}")
 
 # --- App setup ---
 app = Flask(__name__)
