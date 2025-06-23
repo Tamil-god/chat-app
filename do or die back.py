@@ -1,32 +1,34 @@
 from flask import Flask, render_template, request, redirect, session, url_for
 from flask_socketio import SocketIO, send
-import json, os
-from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from pytz import timezone
-from flask_sqlalchemy import SQLAlchemy
-from models import db, Message
-import sqlite3
-india_time = datetime.now(timezone("Asia/Kolkata")).strftime('%I:%M %p')
+import json, os
+
+# --- App setup ---
 app = Flask(__name__)
 app.secret_key = 'do-or-die-secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
-db.init_app(app)
+socketio = SocketIO(app)
+db = SQLAlchemy(app)
 
+# --- Models ---
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100))
+    text = db.Column(db.Text)
+    timestamp = db.Column(db.String(100))
+
+# --- DB init ---
 with app.app_context():
     db.create_all()
 
-
-# Ensure users.json exists
+# --- Ensure users.json exists ---
 if not os.path.exists('users.json'):
     with open('users.json', 'w') as f:
         json.dump({}, f)
 
-# Ensure messages.json exists
-if not os.path.exists('messages.json'):
-    with open('messages.json', 'w') as f:
-        json.dump([], f)
-
+# --- Routes ---
 @app.route('/')
 def home():
     return redirect(url_for('login'))
@@ -74,13 +76,17 @@ def chat():
     if 'username' not in session:
         return redirect(url_for('login'))
 
-    with open('messages.json', 'r') as f:
-        messages = json.load(f)
-
+    messages = Message.query.order_by(Message.id).all()
     is_admin = session['username'].lower() == 'thamizhamuthan'
+
     return render_template('chat.html', username=session['username'], messages=messages, is_admin=is_admin)
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
+# --- WebSocket handler ---
 @socketio.on('message')
 def handle_message(msg):
     user = session.get('username', 'Unknown')
@@ -93,11 +99,6 @@ def handle_message(msg):
 
     send(full_msg, broadcast=True)
 
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
-
+# --- Main entry ---
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
