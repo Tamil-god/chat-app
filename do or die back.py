@@ -69,14 +69,16 @@ def login():
 @app.route('/chat')
 def chat():
     if 'username' not in session:
-        username = session.get('username')
-       is_admin = username == ADMIN_USERNAME
         return redirect(url_for('login'))
 
     with open('messages.json', 'r') as f:
         messages = json.load(f)
 
-    return render_template('chat.html', username=session['username'], messages=messages)
+    # 👇 convert session username to lowercase
+    username = session['username'].strip().lower()
+
+    return render_template('chat.html', username=username, messages=messages)
+
 
 @socketio.on('message')
 def handle_message(msg):
@@ -100,18 +102,22 @@ def handle_message(msg):
 
 
 
-@app.route('/chat')
-def chat():
-    if 'username' not in session:
-        return redirect(url_for('login'))
+@socketio.on('clear_messages')
+def handle_clear():
+    if session.get('username') == "Thamizhamuthan":
+        with open('messages.json', 'w') as f:
+            json.dump([], f)
+        send("All messages cleared by admin.", broadcast=True)
+        socketio.emit('messages_cleared')
+        
+@app.route('/clear_messages', methods=['POST'])
+def clear_messages():
+    if session.get('username', '').strip().lower() != "thamizhamuthan":
+        return "Not authorized", 403
+    with open('messages.json', 'w') as f:
+        json.dump([], f)
+    return redirect(url_for('chat'))
 
-    with open('messages.json', 'r') as f:
-        messages = json.load(f)
-
-    # 👇 convert session username to lowercase
-    username = session['username'].strip().lower()
-
-    return render_template('chat.html', username=username, messages=messages)
 
 
 
