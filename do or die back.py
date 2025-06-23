@@ -77,9 +77,10 @@ def chat():
 def handle_message(msg):
     user = session.get('username', 'Unknown')
 
-    # Set to IST
+    # Set timezone to IST using pytz
     ist = pytz.timezone('Asia/Kolkata')
-    time = datetime.now(ist).strftime('%d-%m-%Y %I:%M %p')  # e.g. 24-06-2025 10:45 PM
+    now = datetime.now(pytz.utc).astimezone(ist)
+    time = now.strftime('%d-%m-%Y %I:%M %p')  # Example: 24-06-2025 03:32 PM
 
     full_msg = f"{user} ({time}): {msg}"
 
@@ -91,6 +92,7 @@ def handle_message(msg):
         json.dump(data, f)
 
     send(full_msg, broadcast=True)
+
 
 
 @app.route('/logout')
