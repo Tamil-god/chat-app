@@ -158,12 +158,16 @@
       input.value = "";
     }
   }
+    function clearMessages() {
+        if (confirm("Are you sure you want to clear all messages?")) {
+            socket.emit('clear_messages');
+        }
+    }
 
-  // ✅ Add this function at the end of your script
-  function clearMessages() {
-    if (confirm("Are you sure you want to clear all messages?")) {
-      fetch("/clear", { method: "POST" }).then(() => {
-        location.reload();
+    socket.on('messages_cleared', () => {
+        document.getElementById('messages').innerHTML = '';
+    });
+
       });
     }
   }
