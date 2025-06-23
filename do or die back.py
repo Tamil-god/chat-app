@@ -81,30 +81,16 @@ def chat():
 
 @socketio.on('message')
 def handle_message(msg):
-    from pytz import timezone
     user = session.get('username', 'Unknown')
-
     india_time = datetime.now(timezone("Asia/Kolkata")).strftime('%I:%M %p')
     full_msg = f"{user} ({india_time}): {msg}"
 
-    # Load existing messages
-    if os.path.exists('messages.json'):
-        with open('messages.json', 'r') as f:
-            try:
-                data = json.load(f)
-            except json.JSONDecodeError:
-                data = []
-    else:
-        data = []
-
-    # Append new message
-    data.append(full_msg)
-
-    # Save back to file
-    with open('messages.json', 'w') as f:
-        json.dump(data, f)
+    new_message = Message(username=user, text=msg, timestamp=india_time)
+    db.session.add(new_message)
+    db.session.commit()
 
     send(full_msg, broadcast=True)
+
 
 @app.route('/logout')
 def logout():
