@@ -100,14 +100,14 @@ def handle_message(msg):
 
 
 
-@app.route('/clear', methods=['POST'])
-def clear_messages():
-    if session.get('username') != ADMIN_USERNAME:
-        return "Unauthorized", 403
+@socketio.on('clear_messages')
+def handle_clear():
+    if session.get('username') == "thamizhamuthan":
+        with open('messages.json', 'w') as f:
+            json.dump([], f)
+        send("All messages cleared by admin.", broadcast=True)
+        socketio.emit('messages_cleared')
 
-    with open('messages.json', 'w') as f:
-        json.dump([], f)
-    return '', 204
 
 @app.route('/logout')
 def logout():
