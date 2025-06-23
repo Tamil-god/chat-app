@@ -1,126 +1,58 @@
+# === File: templates/chat.html ===
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Chat Room</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fafafa;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    .header {
-      background-color: #4CAF50;
-      color: white;
-      padding: 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .chat-box {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-    }
-    .message {
-      background: #e1f5fe;
-      padding: 10px;
-      border-radius: 8px;
-      margin: 10px 0;
-      max-width: 60%;
-    }
-    .message.self {
-      background: #dcedc8;
-      align-self: flex-end;
-    }
-    .footer {
-      display: flex;
-      padding: 10px;
-      border-top: 1px solid #ccc;
-    }
-    .footer input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    .footer button {
-      padding: 10px;
-      margin-left: 10px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-    #typing-status {
-      font-style: italic;
-      color: gray;
-      padding: 0 10px;
-    }
-  </style>
+    <title>Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        #messages { flex-grow: 1; overflow-y: scroll; padding: 10px; background: #f1f1f1; }
+        #messages div { margin: 8px 0; background: white; padding: 10px; border-radius: 5px; }
+        form { display: flex; padding: 10px; border-top: 1px solid #ccc; }
+        input[type="text"] { flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        button { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 5px; margin-left: 8px; }
+    </style>
 </head>
 <body>
-  <div class="header">
-    <div>Welcome, {{ username }}</div>
-    <form action="/logout" method="post">
-      <button type="submit">Logout</button>
+    <header>
+        <div>Welcome, {{ username }}</div>
+        <a href="{{ url_for('logout') }}" style="color: white">Logout</a>
+    </header>
+    <div id="messages"></div>
+    <form id="chat-form">
+        <input id="message" type="text" placeholder="Type a message..." required>
+        <button>Send</button>
     </form>
-  </div>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('message');
+        const messages = document.getElementById('messages');
 
-  <div class="chat-box" id="chat-box"></div>
-  <div id="typing-status"></div>
+        socket.on('load_messages', data => {
+            messages.innerHTML = '';
+            data.forEach(msg => addMessage(msg));
+        });
 
-  <div class="footer">
-    <input id="message" type="text" placeholder="Type a message...">
-    <button onclick="sendMessage()">Send</button>
-  </div>
+        socket.on('receive_message', msg => addMessage(msg));
 
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  <script>
-    const socket = io();
-    const chatBox = document.getElementById("chat-box");
-    const messageInput = document.getElementById("message");
-    const typingStatus = document.getElementById("typing-status");
+        function addMessage(msg) {
+            const div = document.createElement('div');
+            div.textContent = `${msg.username}: ${msg.message}`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
 
-    messageInput.addEventListener("keypress", () => {
-      socket.emit("typing", true);
-    });
-
-    messageInput.addEventListener("blur", () => {
-      socket.emit("typing", false);
-    });
-
-    function sendMessage() {
-      const msg = messageInput.value.trim();
-      if (msg !== "") {
-        socket.emit("send_message", msg);
-        appendMessage(msg, true);
-        messageInput.value = "";
-        socket.emit("typing", false);
-      }
-    }
-
-    function appendMessage(msg, isSelf) {
-      const div = document.createElement("div");
-      div.classList.add("message");
-      if (isSelf) div.classList.add("self");
-
-      const time = new Date().toLocaleTimeString();
-      div.innerHTML = `<strong>${isSelf ? 'You' : 'User'}:</strong> ${msg}<br><small>${time}</small>`;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    socket.on("receive_message", msg => {
-      appendMessage(msg, false);
-    });
-
-    socket.on("user_typing", isTyping => {
-      typingStatus.textContent = isTyping ? "Someone is typing..." : "";
-    });
-  </script>
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            const message = input.value.trim();
+            if (message) {
+                socket.emit('send_message', { message });
+                input.value = '';
+            }
+        });
+    </script>
 </body>
 </html>
