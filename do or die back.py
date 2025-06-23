@@ -76,20 +76,29 @@ def chat():
 def handle_message(msg):
     from pytz import timezone
     user = session.get('username', 'Unknown')
-    
-    india = timezone("Asia/Kolkata")
-    india_time = datetime.now(india).strftime('%I:%M %p')
-    
+
+    india_time = datetime.now(timezone("Asia/Kolkata")).strftime('%I:%M %p')
     full_msg = f"{user} ({india_time}): {msg}"
 
-    with open('messages.json', 'r') as f:
-        data = json.load(f)
+    # Load existing messages
+    if os.path.exists('messages.json'):
+        with open('messages.json', 'r') as f:
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = []
+    else:
+        data = []
+
+    # Append new message
     data.append(full_msg)
 
+    # Save back to file
     with open('messages.json', 'w') as f:
         json.dump(data, f)
 
     send(full_msg, broadcast=True)
+
 @app.route('/logout')
 def logout():
     session.clear()
