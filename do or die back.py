@@ -110,23 +110,6 @@ def handle_clear():
         send("All messages cleared by admin.", broadcast=True)
         socketio.emit('messages_cleared')
 
-@app.route('/chat')
-def chat():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-
-    with open('messages.json', 'r') as f:
-        messages = json.load(f)
-
-    username = session['username'].strip().lower()
-    is_admin = username == ADMIN_USERNAME
-
-    return render_template('chat.html', username=username, messages=messages, is_admin=is_admin)
-
-
-
-
-
 @app.route('/logout')
 def logout():
     session.clear()
