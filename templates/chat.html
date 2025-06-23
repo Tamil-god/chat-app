@@ -8,6 +8,13 @@ from pytz import timezone
 app = Flask(__name__)
 app.secret_key = 'do-or-die-secret-key'
 socketio = SocketIO(app)
+<header>
+  <span>{{ username }}{% if is_admin %} [Admin]{% endif %}</span>
+  {% if is_admin %}
+    <button onclick="clearMessages()" style="background:red;color:white;border:none;border-radius:10px;padding:5px 10px;margin-left:10px;">🧹 Clear</button>
+  {% endif %}
+  <a href="/logout" class="logout">Logout</a>
+</header>
 
 # Initialize SQLite database
 DB_FILE = 'chat.db'
