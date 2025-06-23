@@ -1,110 +1,83 @@
-from flask import Flask, render_template, request, redirect, session, url_for
-from flask_socketio import SocketIO, send
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, render_template, request, redirect, url_for, session
+from flask_socketio import SocketIO, send, emit
+import json
+import os
 from datetime import datetime
-from pytz import timezone
-import json, os
-from app import db, Message
 
-# Print all messages in the database
-messages = Message.query.all()
-for msg in messages:
-    print(f"{msg.username} ({msg.timestamp}): {msg.text}")
-
-# --- App setup ---
 app = Flask(__name__)
-app.secret_key = 'do-or-die-secret-key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
+app.secret_key = "super-secret-key"
 socketio = SocketIO(app)
-db = SQLAlchemy(app)
 
-# --- Models ---
-class Message(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100))
-    text = db.Column(db.Text)
-    timestamp = db.Column(db.String(100))
+USERS_FILE = "users.json"
+MESSAGES_FILE = "messages.json"
 
-# --- DB init ---
-with app.app_context():
-    db.create_all()
+# Load users from JSON
+def load_users():
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, "r") as f:
+            return json.load(f)
+    return {}
 
-# --- Ensure users.json exists ---
-if not os.path.exists('users.json'):
-    with open('users.json', 'w') as f:
-        json.dump({}, f)
+# Load messages from JSON
+def load_messages():
+    if os.path.exists(MESSAGES_FILE):
+        with open(MESSAGES_FILE, "r") as f:
+            return json.load(f)
+    return []
 
-# --- Routes ---
-@app.route('/')
-def home():
-    return redirect(url_for('login'))
+# Save message to JSON
+def save_message(data):
+    messages = load_messages()
+    messages.append(data)
+    with open(MESSAGES_FILE, "w") as f:
+        json.dump(messages, f, indent=4)
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        uname = request.form['username']
-        pwd = request.form['password']
-
-        with open('users.json', 'r') as f:
-            users = json.load(f)
-
-        if uname in users:
-            return "Username already exists!"
-
-        users[uname] = pwd
-
-        with open('users.json', 'w') as f:
-            json.dump(users, f)
-
-        return redirect(url_for('login'))
-
-    return render_template('register.html')
-
-@app.route('/login', methods=['GET', 'POST'])
+@app.route("/", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
-        uname = request.form['username']
-        pwd = request.form['password']
+    if request.method == "POST":
+        name = request.form["username"]
+        password = request.form["password"]
+        users = load_users()
+        if name in users and users[name] == password:
+            session["username"] = name
+            return redirect(url_for("chat"))
+        else:
+            return "Invalid credentials!"
+    return render_template("login.html")
 
-        with open('users.json', 'r') as f:
-            users = json.load(f)
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        name = request.form["username"]
+        password = request.form["password"]
+        users = load_users()
+        if name in users:
+            return "User already exists"
+        users[name] = password
+        with open(USERS_FILE, "w") as f:
+            json.dump(users, f, indent=4)
+        return redirect(url_for("login"))
+    return render_template("register.html")
 
-        if uname in users and users[uname] == pwd:
-            session['username'] = uname
-            return redirect(url_for('chat'))
-
-        return "Invalid username or password!"
-
-    return render_template('login.html')
-
-@app.route('/chat')
+@app.route("/chat")
 def chat():
-    if 'username' not in session:
-        return redirect(url_for('login'))
+    if "username" not in session:
+        return redirect(url_for("login"))
+    messages = load_messages()
+    return render_template("chat.html", username=session["username"], messages=messages)
 
-    messages = Message.query.order_by(Message.id).all()
-    is_admin = session['username'].lower() == 'thamizhamuthan'
-
-    return render_template('chat.html', username=session['username'], messages=messages, is_admin=is_admin)
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
-
-# --- WebSocket handler ---
-@socketio.on('message')
+@socketio.on("message")
 def handle_message(msg):
-    user = session.get('username', 'Unknown')
-    india_time = datetime.now(timezone("Asia/Kolkata")).strftime('%I:%M %p')
-    full_msg = f"{user} ({india_time}): {msg}"
-
-    new_message = Message(username=user, text=msg, timestamp=india_time)
-    db.session.add(new_message)
-    db.session.commit()
-
+    time = datetime.now().strftime("%H:%M:%S")
+    user = session.get("username", "Anonymous")
+    full_msg = {"username": user, "message": msg, "time": time}
+    save_message(full_msg)
     send(full_msg, broadcast=True)
 
-# --- Main entry ---
-if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
+@app.route("/logout")
+def logout():
+    session.pop("username", None)
+    return redirect(url_for("login"))
+
+if __name__ == "__main__":
+    socketio.run(app, debug=True)
