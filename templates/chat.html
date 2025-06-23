@@ -182,6 +182,13 @@
       input.value = "";
     }
   }
+  function clearMessages() {
+  if (confirm("Are you sure you want to clear all messages?")) {
+    fetch("/clear", { method: "POST" }).then(() => {
+      location.reload();
+    });
+  }
+}
 
   // ✅ Add this function at the end of your script
   function clearMessages() {
