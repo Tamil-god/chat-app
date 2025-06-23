@@ -100,13 +100,19 @@ def handle_message(msg):
 
 
 
-@socketio.on('clear_messages')
-def handle_clear():
-    if session.get('username') == "thamizhamuthan":
-        with open('messages.json', 'w') as f:
-            json.dump([], f)
-        send("All messages cleared by admin.", broadcast=True)
-        socketio.emit('messages_cleared')
+@app.route('/chat')
+def chat():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    with open('messages.json', 'r') as f:
+        messages = json.load(f)
+
+    # 👇 convert session username to lowercase
+    username = session['username'].strip().lower()
+
+    return render_template('chat.html', username=username, messages=messages)
+
 
 
 @app.route('/logout')
