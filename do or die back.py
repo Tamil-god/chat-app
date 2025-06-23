@@ -4,6 +4,9 @@ import json, os
 from datetime import datetime
 from datetime import datetime
 import pytz
+from flask import request
+
+ADMIN_USERNAME = "Thamizhamuthan"
 
 
 app = Flask(__name__)
@@ -66,6 +69,8 @@ def login():
 @app.route('/chat')
 def chat():
     if 'username' not in session:
+        username = session.get('username')
+       is_admin = username == ADMIN_USERNAME
         return redirect(url_for('login'))
 
     with open('messages.json', 'r') as f:
@@ -94,6 +99,15 @@ def handle_message(msg):
     send(full_msg, broadcast=True)
 
 
+
+@app.route('/clear', methods=['POST'])
+def clear_messages():
+    if session.get('username') != ADMIN_USERNAME:
+        return "Unauthorized", 403
+
+    with open('messages.json', 'w') as f:
+        json.dump([], f)
+    return '', 204
 
 @app.route('/logout')
 def logout():
