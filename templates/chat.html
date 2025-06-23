@@ -116,8 +116,13 @@
     <a href="/logout" class="logout">Logout</a>
     <span>{{ username }}{% if username == 'Thamizhamuthan' %} [Admin]{% endif %}</span>
     {% if username == "thamizhamuthan" %}
-    <button onclick="clearMessages()" style="margin-left: 10px;">🧹 Clear Messages</button>
-    {% endif %}
+    <form action="{{ url_for('clear_messages') }}" method="post" style="text-align:center;">
+        <button type="submit" style="background:red;color:white;padding:5px 10px;border:none;border-radius:5px;">
+            🧹 Clear Messages
+        </button>
+    </form>
+{% endif %}
+
 
   <a href="/logout" class="logout">Logout</a>
   </header>
