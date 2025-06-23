@@ -1,106 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Chat App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <title>Chat Room</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
       font-family: Arial, sans-serif;
-      background: #fefefe;
+      background: #fafafa;
+      margin: 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
       height: 100vh;
     }
-
-    .chat-container {
-      flex: 1;
+    .header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 15px;
       display: flex;
-      flex-direction: column;
-      padding: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chat-box {
+      flex: 1;
+      padding: 15px;
       overflow-y: auto;
     }
-
     .message {
-      max-width: 70%;
-      margin: 10px;
-      padding: 10px;
-      border-radius: 15px;
       background: #e1f5fe;
-      position: relative;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 10px 0;
+      max-width: 60%;
     }
-
     .message.self {
-      align-self: flex-end;
       background: #dcedc8;
+      align-self: flex-end;
     }
-
-    .message .meta {
-      font-size: 0.7rem;
-      color: #777;
-      margin-top: 5px;
-      text-align: right;
-    }
-
-    .typing {
-      font-style: italic;
-      color: gray;
-      margin: 10px;
-    }
-
-    .input-box {
+    .footer {
       display: flex;
       padding: 10px;
       border-top: 1px solid #ccc;
     }
-
-    .input-box input {
+    .footer input {
       flex: 1;
       padding: 10px;
+      border-radius: 5px;
       border: 1px solid #ccc;
-      border-radius: 10px;
     }
-
-    .input-box button {
-      background: #ff4081;
-      border: none;
-      color: white;
-      padding: 10px 15px;
+    .footer button {
+      padding: 10px;
       margin-left: 10px;
-      border-radius: 10px;
-      cursor: pointer;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
     }
-
-    .input-box button:hover {
-      background: #f50057;
+    #typing-status {
+      font-style: italic;
+      color: gray;
+      padding: 0 10px;
     }
   </style>
 </head>
 <body>
-  <div class="chat-container" id="chat-box">
-    <!-- Messages will appear here -->
+  <div class="header">
+    <div>Welcome, {{ username }}</div>
+    <form action="/logout" method="post">
+      <button type="submit">Logout</button>
+    </form>
   </div>
 
-  <div class="typing" id="typing-status"></div>
+  <div class="chat-box" id="chat-box"></div>
+  <div id="typing-status"></div>
 
-  <div class="input-box">
-    <input id="message" type="text" placeholder="Type a message..." autocomplete="off"/>
-    <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+  <div class="footer">
+    <input id="message" type="text" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
   </div>
 
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script>
     const socket = io();
-    const messageInput = document.getElementById('message');
-    const chatBox = document.getElementById('chat-box');
-    const typingStatus = document.getElementById('typing-status');
+    const chatBox = document.getElementById("chat-box");
+    const messageInput = document.getElementById("message");
+    const typingStatus = document.getElementById("typing-status");
 
     messageInput.addEventListener("keypress", () => {
       socket.emit("typing", true);
@@ -121,15 +104,12 @@
     }
 
     function appendMessage(msg, isSelf) {
-      const div = document.createElement('div');
+      const div = document.createElement("div");
       div.classList.add("message");
       if (isSelf) div.classList.add("self");
 
       const time = new Date().toLocaleTimeString();
-      div.innerHTML = `
-        <div>${msg}</div>
-        <div class="meta">${time}</div>
-      `;
+      div.innerHTML = `<strong>${isSelf ? 'You' : 'User'}:</strong> ${msg}<br><small>${time}</small>`;
       chatBox.appendChild(div);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
