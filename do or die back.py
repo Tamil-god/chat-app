@@ -8,8 +8,8 @@ from flask_sqlalchemy import SQLAlchemy
 from models import db, Message
 import sqlite3
 india_time = datetime.now(timezone("Asia/Kolkata")).strftime('%I:%M %p')
-
-
+is_admin = session['username'].lower() == 'thamizhamuthan'
+return render_template('chat.html', username=session['username'], messages=messages, is_admin=is_admin)
 app = Flask(__name__)
 app.secret_key = 'do-or-die-secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
