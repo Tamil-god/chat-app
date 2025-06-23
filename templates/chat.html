@@ -1,132 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chat</title>
   <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
+      margin: 0; padding: 0; height: 100%;
       font-family: Arial, sans-serif;
       background-color: #f4f6f9;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
     }
-
     header {
-      background-color: #007BFF;
-      color: white;
-      padding: 1rem;
-      font-size: 1.2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      background-color: #007BFF; color: white;
+      padding: 1rem; font-size: 1.2rem;
+      display: flex; justify-content: space-between; align-items: center;
     }
-
     #chat-box {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: 1rem;
-      background: white;
-      display: flex;
-      flex-direction: column;
+      flex-grow: 1; overflow-y: auto;
+      padding: 1rem; background: white;
+      display: flex; flex-direction: column;
     }
-
     .msg {
-      background: #e4e6eb;
-      padding: 0.75rem;
-      margin-bottom: 0.5rem;
-      border-radius: 12px;
-      max-width: 75%;
-      word-wrap: break-word;
+      background: #e4e6eb; padding: 0.75rem;
+      margin-bottom: 0.5rem; border-radius: 12px;
+      max-width: 75%; word-wrap: break-word;
     }
-
     .self {
-      background: #d1ffd6;
-      align-self: flex-end;
+      background: #d1ffd6; align-self: flex-end;
     }
-
     #input-area {
-      display: flex;
-      padding: 0.75rem;
-      background: #f1f1f1;
-      gap: 10px;
+      display: flex; padding: 0.75rem;
+      background: #f1f1f1; gap: 10px;
     }
-
     #msg {
-      flex: 1;
-      padding: 0.75rem;
-      font-size: 1rem;
-      border-radius: 20px;
-      border: 1px solid #ccc;
-      outline: none;
+      flex: 1; padding: 0.75rem;
+      font-size: 1rem; border-radius: 20px;
+      border: 1px solid #ccc; outline: none;
     }
-
     button {
       padding: 0.75rem 1rem;
-      background: #28a745;
-      color: white;
-      border: none;
-      border-radius: 20px;
-      font-size: 1rem;
-      cursor: pointer;
+      background: #28a745; color: white;
+      border: none; border-radius: 20px;
+      font-size: 1rem; cursor: pointer;
     }
-
     a.logout {
-      color: white;
-      text-decoration: none;
-      font-size: 0.9rem;
+      color: white; text-decoration: none; font-size: 0.9rem;
     }
-
     @media (max-width: 600px) {
-      header {
-        font-size: 1rem;
-        padding: 0.75rem;
-      }
-
-      #msg {
-        font-size: 0.9rem;
-      }
-
-      button {
-        font-size: 0.9rem;
-      }
-
-      .msg {
-        font-size: 0.9rem;
-      }
+      header { font-size: 1rem; padding: 0.75rem; }
+      #msg, button, .msg { font-size: 0.9rem; }
     }
   </style>
 </head>
 <body>
+
   <header>
-    <span>{{ username }}{% if is_admin %} [Admin]{% endif %}</span>
-    {% if is_admin %}
-      <button onclick="clearMessages()" style="background:red;color:white;border:none;border-radius:10px;padding:5px 10px;margin-left:10px;">🧹 Clear</button>
-    {% endif %}
-    <a href="/logout" class="logout">Logout</a>
-    <span>{{ username }}{% if username == 'Thamizhamuthan' %} [Admin]{% endif %}</span>
-    {% if username == "thamizhamuthan" %}
-    <form action="{{ url_for('clear_messages') }}" method="post" style="text-align:center;">
+    <span>{{ username }}{% if username|lower == 'thamizhamuthan' %} [Admin]{% endif %}</span>
+    <div style="display: flex; gap: 10px;">
+      {% if username|lower == 'thamizhamuthan' %}
+      <form action="{{ url_for('clear_messages') }}" method="post">
         <button type="submit" style="background:red;color:white;padding:5px 10px;border:none;border-radius:5px;">
-            🧹 Clear Messages
+          🧹 Clear
         </button>
-    </form>
-{% endif %}
-
-
-  <a href="/logout" class="logout">Logout</a>
+      </form>
+      {% endif %}
+      <a href="/logout" class="logout">Logout</a>
+    </div>
   </header>
-
 
   <div id="chat-box">
     {% for m in messages %}
@@ -139,45 +82,35 @@
     <button onclick="sendMessage()">➤</button>
   </div>
 
- <script>
-  // already exists:
-  const socket = io();
-  const username = "{{ username }}";
+  <script>
+    const socket = io();
+    const username = "{{ username }}";
+    const chatBox = document.getElementById("chat-box");
 
-  socket.on("message", function(msg) {
-    const div = document.createElement("div");
-    div.className = "msg";
-    if (msg.startsWith(username + " ")) {
-      div.classList.add("self");
-    }
-    div.textContent = msg;
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
+    socket.on("message", function(msg) {
+      const div = document.createElement("div");
+      div.className = "msg";
+      if (msg.startsWith(username + " ")) {
+        div.classList.add("self");
+      }
+      div.textContent = msg;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
 
-  function sendMessage() {
-    const input = document.getElementById("msg");
-    const text = input.value.trim();
-    if (text !== "") {
-      socket.emit("message", text);
-      input.value = "";
-    }
-  }
-    function clearMessages() {
-        if (confirm("Are you sure you want to clear all messages?")) {
-            socket.emit('clear_messages');
-        }
+    function sendMessage() {
+      const input = document.getElementById("msg");
+      const text = input.value.trim();
+      if (text !== "") {
+        socket.emit("message", text);
+        input.value = "";
+      }
     }
 
     socket.on('messages_cleared', () => {
-        document.getElementById('messages').innerHTML = '';
+      chatBox.innerHTML = '';
     });
-
-      });
-    }
-  }
-</script>
-
+  </script>
 
 </body>
 </html>
