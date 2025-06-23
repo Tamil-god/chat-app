@@ -2,67 +2,145 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chat App</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #fefefe;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    .message {
+      max-width: 70%;
+      margin: 10px;
+      padding: 10px;
+      border-radius: 15px;
+      background: #e1f5fe;
+      position: relative;
+    }
+
+    .message.self {
+      align-self: flex-end;
+      background: #dcedc8;
+    }
+
+    .message .meta {
+      font-size: 0.7rem;
+      color: #777;
+      margin-top: 5px;
+      text-align: right;
+    }
+
+    .typing {
+      font-style: italic;
+      color: gray;
+      margin: 10px;
+    }
+
+    .input-box {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+    }
+
+    .input-box input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    .input-box button {
+      background: #ff4081;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      margin-left: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .input-box button:hover {
+      background: #f50057;
+    }
+  </style>
 </head>
 <body>
-  <div class="chat-container">
-    <div class="chat-header">
-      <h2>💬 Chat Room</h2>
-      <p id="typing-status"></p>
-    </div>
-    <div class="chat-box" id="chat-box"></div>
-
-    <div class="input-container">
-      <input type="text" id="username" placeholder="Username" required />
-      <input type="text" id="message" placeholder="Type a message..." autocomplete="off" />
-      <button onclick="sendMessage()">Send</button>
-    </div>
+  <div class="chat-container" id="chat-box">
+    <!-- Messages will appear here -->
   </div>
 
+  <div class="typing" id="typing-status"></div>
+
+  <div class="input-box">
+    <input id="message" type="text" placeholder="Type a message..." autocomplete="off"/>
+    <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+  </div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script>
     const socket = io();
-    const messageInput = document.getElementById("message");
-    const chatBox = document.getElementById("chat-box");
-    const typingStatus = document.getElementById("typing-status");
+    const messageInput = document.getElementById('message');
+    const chatBox = document.getElementById('chat-box');
+    const typingStatus = document.getElementById('typing-status');
 
-    messageInput.addEventListener("input", () => {
-      const user = document.getElementById("username").value;
-      socket.emit("typing", user);
+    messageInput.addEventListener("keypress", () => {
+      socket.emit("typing", true);
     });
 
-    socket.on("receive_message", (data) => {
-      const msg = document.createElement("div");
-      msg.className = data.username === document.getElementById("username").value ? "message sent" : "message received";
-      msg.innerHTML = `
-        <p class="user">${data.username}:</p>
-        <p>${data.message}</p>
-        <span class="time">${data.time}</span>
-      `;
-      chatBox.appendChild(msg);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
-
-    socket.on("user_typing", (username) => {
-      typingStatus.textContent = `${username} is typing...`;
-      setTimeout(() => {
-        typingStatus.textContent = "";
-      }, 2000);
+    messageInput.addEventListener("blur", () => {
+      socket.emit("typing", false);
     });
 
     function sendMessage() {
-      const username = document.getElementById("username").value;
-      const message = messageInput.value;
-      if (username && message) {
-        socket.emit("send_message", {
-          username,
-          message,
-        });
+      const msg = messageInput.value.trim();
+      if (msg !== "") {
+        socket.emit("send_message", msg);
+        appendMessage(msg, true);
         messageInput.value = "";
+        socket.emit("typing", false);
       }
     }
+
+    function appendMessage(msg, isSelf) {
+      const div = document.createElement('div');
+      div.classList.add("message");
+      if (isSelf) div.classList.add("self");
+
+      const time = new Date().toLocaleTimeString();
+      div.innerHTML = `
+        <div>${msg}</div>
+        <div class="meta">${time}</div>
+      `;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    socket.on("receive_message", msg => {
+      appendMessage(msg, false);
+    });
+
+    socket.on("user_typing", isTyping => {
+      typingStatus.textContent = isTyping ? "Someone is typing..." : "";
+    });
   </script>
 </body>
 </html>
