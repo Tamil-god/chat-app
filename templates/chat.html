@@ -114,6 +114,11 @@
       <button onclick="clearMessages()" style="background:red;color:white;border:none;border-radius:10px;padding:5px 10px;margin-left:10px;">🧹 Clear</button>
     {% endif %}
     <a href="/logout" class="logout">Logout</a>
+    <span>{{ username }}{% if username == 'Thamizhamuthan' %} [Admin]{% endif %}</span>
+  {% if username == 'Thamizhamuthan' %}
+    <button onclick="clearMessages()" style="background:red;color:white;border:none;border-radius:10px;padding:5px 10px;margin-left:10px;">🧹 Clear</button>
+  {% endif %}
+  <a href="/logout" class="logout">Logout</a>
   </header>
 
 
