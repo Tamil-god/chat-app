@@ -1,1 +1,3 @@
-[]
+messages = Message.query.all()
+return render_template("chat.html", username=session['username'], messages=messages)
+
