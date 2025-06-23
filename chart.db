@@ -1,1 +1,13 @@
 
+from models import db, Message
+from flask import Flask
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+
+with app.app_context():
+    messages = Message.query.all()
+    for msg in messages:
+        print(f"{msg.username} ({msg.timestamp}): {msg.text}")
