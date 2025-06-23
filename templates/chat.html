@@ -1,146 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+
   <meta charset="UTF-8" />
-  <title>Chat App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat</title>
+  <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
   <style>
     * {
-      margin: 0;
-      padding: 0;
       box-sizing: border-box;
     }
 
-    body {
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
       font-family: Arial, sans-serif;
-      background: #fefefe;
+      background-color: #f4f6f9;
       display: flex;
       flex-direction: column;
-      height: 100vh;
     }
 
-    .chat-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 10px;
-      overflow-y: auto;
-    }
-
-    .message {
-      max-width: 70%;
-      margin: 10px;
-      padding: 10px;
-      border-radius: 15px;
-      background: #e1f5fe;
-      position: relative;
-    }
-
-    .message.self {
-      align-self: flex-end;
-      background: #dcedc8;
-    }
-
-    .message .meta {
-      font-size: 0.7rem;
-      color: #777;
-      margin-top: 5px;
-      text-align: right;
-    }
-
-    .typing {
-      font-style: italic;
-      color: gray;
-      margin: 10px;
-    }
-
-    .input-box {
-      display: flex;
-      padding: 10px;
-      border-top: 1px solid #ccc;
-    }
-
-    .input-box input {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-    }
-
-    .input-box button {
-      background: #ff4081;
-      border: none;
+    header {
+      background-color: #007BFF;
       color: white;
-      padding: 10px 15px;
-      margin-left: 10px;
-      border-radius: 10px;
+      padding: 1rem;
+      font-size: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #chat-box {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      background: white;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .msg {
+      background: #e4e6eb;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border-radius: 12px;
+      max-width: 75%;
+      word-wrap: break-word;
+    }
+
+    .self {
+      background: #d1ffd6;
+      align-self: flex-end;
+    }
+
+    #input-area {
+      display: flex;
+      padding: 0.75rem;
+      background: #f1f1f1;
+      gap: 10px;
+    }
+
+    #msg {
+      flex: 1;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+
+    button {
+      padding: 0.75rem 1rem;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-size: 1rem;
       cursor: pointer;
     }
 
-    .input-box button:hover {
-      background: #f50057;
+    a.logout {
+      color: white;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        font-size: 1rem;
+        padding: 0.75rem;
+      }
+
+      #msg {
+        font-size: 0.9rem;
+      }
+
+      button {
+        font-size: 0.9rem;
+      }
+
+      .msg {
+        font-size: 0.9rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="chat-container" id="chat-box">
-    <!-- Messages will appear here -->
+  <header>
+    <span>{{ username }}{% if is_admin %} [Admin]{% endif %}</span>
+    {% if is_admin %}
+      <button onclick="clearMessages()" style="background:red;color:white;border:none;border-radius:10px;padding:5px 10px;margin-left:10px;">🧹 Clear</button>
+    {% endif %}
+    <a href="/logout" class="logout">Logout</a>
+  </header>
+
+
+  <div id="chat-box">
+    {% for m in messages %}
+      <div class="msg">{{ m }}</div>
+    {% endfor %}
   </div>
 
-  <div class="typing" id="typing-status"></div>
-
-  <div class="input-box">
-    <input id="message" type="text" placeholder="Type a message..." autocomplete="off"/>
-    <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+  <div id="input-area">
+    <input id="msg" type="text" placeholder="Type your message…" />
+    <button onclick="sendMessage()">➤</button>
   </div>
 
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script>
     const socket = io();
-    const messageInput = document.getElementById('message');
-    const chatBox = document.getElementById('chat-box');
-    const typingStatus = document.getElementById('typing-status');
+    const chatBox = document.getElementById("chat-box");
+    const username = "{{ username }}";
 
-    messageInput.addEventListener("keypress", () => {
-      socket.emit("typing", true);
-    });
-
-    messageInput.addEventListener("blur", () => {
-      socket.emit("typing", false);
+    socket.on("message", function (msg) {
+      const div = document.createElement("div");
+      div.classList.add("msg");
+      if (msg.startsWith(username + " ")) {
+        div.classList.add("self");
+      }
+      div.textContent = msg;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
     });
 
     function sendMessage() {
-      const msg = messageInput.value.trim();
-      if (msg !== "") {
-        socket.emit("send_message", msg);
-        appendMessage(msg, true);
-        messageInput.value = "";
-        socket.emit("typing", false);
+      const input = document.getElementById("msg");
+      const text = input.value.trim();
+      if (text !== "") {
+        socket.emit("message", text);
+        input.value = "";
       }
     }
-
-    function appendMessage(msg, isSelf) {
-      const div = document.createElement('div');
-      div.classList.add("message");
-      if (isSelf) div.classList.add("self");
-
-      const time = new Date().toLocaleTimeString();
-      div.innerHTML = `
-        <div>${msg}</div>
-        <div class="meta">${time}</div>
-      `;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    socket.on("receive_message", msg => {
-      appendMessage(msg, false);
-    });
-
-    socket.on("user_typing", isTyping => {
-      typingStatus.textContent = isTyping ? "Someone is typing..." : "";
-    });
   </script>
+<script>
+  // already exists:
+  const socket = io();
+  const username = "{{ username }}";
+
+  socket.on("message", function(msg) {
+    const div = document.createElement("div");
+    div.className = "msg";
+    if (msg.startsWith(username + " ")) {
+      div.classList.add("self");
+    }
+    div.textContent = msg;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+
+  function sendMessage() {
+    const input = document.getElementById("msg");
+    const text = input.value.trim();
+    if (text !== "") {
+      socket.emit("message", text);
+      input.value = "";
+    }
+  }
+
+  // ✅ Add this function at the end of your script
+  function clearMessages() {
+    if (confirm("Are you sure you want to clear all messages?")) {
+      fetch("/clear", { method: "POST" }).then(() => {
+        location.reload();
+      });
+    }
+  }
+</script>
+
 </body>
 </html>
