@@ -6,7 +6,7 @@ from datetime import datetime
 import pytz
 from flask import request
 
-ADMIN_USERNAME = "Thamizhamuthan"
+ADMIN_USERNAME = "thamizhamuthan"
 
 
 app = Flask(__name__)
