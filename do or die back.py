@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, redirect, session, url_for
 from flask_socketio import SocketIO, send
 import json, os
 from datetime import datetime
+from datetime import datetime
+import pytz
+
 
 app = Flask(__name__)
 app.secret_key = 'do-or-die-secret-key'
@@ -16,6 +19,7 @@ if not os.path.exists('users.json'):
 if not os.path.exists('messages.json'):
     with open('messages.json', 'w') as f:
         json.dump([], f)
+
 
 @app.route('/')
 def home():
@@ -72,7 +76,11 @@ def chat():
 @socketio.on('message')
 def handle_message(msg):
     user = session.get('username', 'Unknown')
-    time = datetime.now().strftime('%I:%M %p')  # e.g. 10:45 PM
+
+    # Set to IST
+    ist = pytz.timezone('Asia/Kolkata')
+    time = datetime.now(ist).strftime('%d-%m-%Y %I:%M %p')  # e.g. 24-06-2025 10:45 PM
+
     full_msg = f"{user} ({time}): {msg}"
 
     with open('messages.json', 'r') as f:
@@ -83,6 +91,7 @@ def handle_message(msg):
         json.dump(data, f)
 
     send(full_msg, broadcast=True)
+
 
 @app.route('/logout')
 def logout():
