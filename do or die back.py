@@ -5,10 +5,17 @@ from datetime import datetime
 from datetime import datetime
 from pytz import timezone
 india_time = datetime.now(timezone("Asia/Kolkata")).strftime('%I:%M %p')
+from flask_sqlalchemy import SQLAlchemy
+from models import db, Message
 
 app = Flask(__name__)
 app.secret_key = 'do-or-die-secret-key'
-socketio = SocketIO(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
 
 # Ensure users.json exists
 if not os.path.exists('users.json'):
