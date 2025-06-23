@@ -74,8 +74,12 @@ def chat():
 
 @socketio.on('message')
 def handle_message(msg):
+    from pytz import timezone
     user = session.get('username', 'Unknown')
-    india_time = datetime.now(timezone("Asia/Kolkata")).strftime('%I:%M %p')
+    
+    india = timezone("Asia/Kolkata")
+    india_time = datetime.now(india).strftime('%I:%M %p')
+    
     full_msg = f"{user} ({india_time}): {msg}"
 
     with open('messages.json', 'r') as f:
