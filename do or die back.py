@@ -1,21 +1,16 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, render_template, request, redirect, session, url_for
-from flask_socketio import SocketIO, send
-import json, os
+from flask_socketio import SocketIO, emit, send
+import json
+import os
 from datetime import datetime
-import time
-from flask import request
-import base64
-import smtplib
-from email.message import EmailMessage
-from email.mime.multipart import MIMEMultipart
-from email.mime.image import MIMEImage
-
-ADMIN_USERNAME = "thamizhamuthan"
-
+import pytz
 
 app = Flask(__name__)
 app.secret_key = 'do-or-die-secret-key'
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='eventlet')
 
 # Ensure users.json exists
 if not os.path.exists('users.json'):
@@ -27,10 +22,13 @@ if not os.path.exists('messages.json'):
     with open('messages.json', 'w') as f:
         json.dump([], f)
 
-
+def get_ist_time():
+    indian_timezone = pytz.timezone("Asia/Kolkata")
+    now = datetime.now(indian_timezone)
+    return now.strftime('%I:%M %p'), now.strftime('%d-%m-%Y')
 @app.route('/')
 def home():
-    return redirect(url_for('login'))
+    return render_template('app_website.html')  # Render your homepage here instead of redirecting to login
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -53,48 +51,17 @@ def register():
 
     return render_template('register.html')
 
-
-
-EMAIL_SENDER = "kira7shikigami@gmail.com"
-EMAIL_PASSWORD = "ezue ednq ollg edjn"
-EMAIL_RECEIVER = "m.naruto2009@gmail.com"
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        uname = request.form['username'].strip()
+        uname = request.form['username']
         pwd = request.form['password']
-        photo_data = request.form.get('photo')
 
         with open('users.json', 'r') as f:
             users = json.load(f)
 
         if uname in users and users[uname] == pwd:
             session['username'] = uname
-
-            if photo_data:
-                try:
-                    photo_base64 = photo_data.split(',')[1]
-                    img_bytes = base64.b64decode(photo_base64)
-                    img_filename = f"{uname}_login.png"
-
-                    msg = MIMEMultipart()
-                    msg['Subject'] = f'{uname} just logged in'
-                    msg['From'] = EMAIL_SENDER
-                    msg['To'] = EMAIL_RECEIVER
-
-                    img = MIMEImage(img_bytes, name=img_filename)
-                    msg.attach(img)
-
-                    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-                        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-                        server.send_message(msg)
-
-                    print(f"✅ Login photo sent for {uname}")
-
-                except Exception as e:
-                    print(f"❌ Failed to send email: {e}")
-
             return redirect(url_for('chat'))
 
         return "Invalid username or password!"
@@ -109,47 +76,48 @@ def chat():
     with open('messages.json', 'r') as f:
         messages = json.load(f)
 
-    username = session['username'].strip().lower()
-    is_admin = username == ADMIN_USERNAME
+    username = session['username']
+    is_admin = username.lower() == "thamizhamuthan"  # Case-insensitive admin check
 
-    return render_template('chat.html', username=username, messages=messages, is_admin=is_admin)
-
-
+    return render_template('chat.html', username=username, is_admin=is_admin, messages=messages)
 
 @socketio.on('message')
 def handle_message(msg):
     user = session.get('username', 'Unknown')
-
-    # Set timezone to IST using pytz
-    now = time.localtime()
-    time_str = time.strftime('%d-%m-%Y %I:%M %p', now)
-
-
-    full_msg = f"{user} ({time_str}): {msg}"
+    time, date = get_ist_time()
+    message_data = {
+        "user": user,
+        "text": msg,
+        "time": time,
+        "date": date
+    }
 
     with open('messages.json', 'r') as f:
         data = json.load(f)
-    data.append(full_msg)
+
+    data.append(message_data)
 
     with open('messages.json', 'w') as f:
-        json.dump(data, f)
+        json.dump(data, f, indent=2)
 
-    send(full_msg, broadcast=True)
+    send(message_data, broadcast=True)
 
-
-
-@socketio.on('clear_messages')
-def handle_clear():
-    if session.get('username', '').strip().lower() == ADMIN_USERNAME:
-        with open('messages.json', 'w') as f:
-            json.dump([], f)
-        send("All messages cleared by admin.", broadcast=True)
-        socketio.emit('messages_cleared')
+@socketio.on('typing')
+def handle_typing(data):
+    emit('user_typing', data, broadcast=True, include_self=False)
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route('/clear', methods=['POST'])
+def clear_messages():
+    with open('messages.json', 'w') as f:
+        json.dump([], f)  # Clear message list
+    return '', 204  # Success without content
+
 if __name__ == '__main__':
-    # socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
+    port = 5050
+    socketio.run(app, host='0.0.0.0', port=port, debug=True, allow_unsafe_werkzeug=True)
+
