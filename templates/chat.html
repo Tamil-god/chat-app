@@ -13,42 +13,85 @@
       background-color: #f4f6f9;
       display: flex; flex-direction: column;
     }
+
     header {
-      background-color: #007BFF; color: white;
-      padding: 1rem; font-size: 1.2rem;
-      display: flex; justify-content: space-between; align-items: center;
+      background-color: #007BFF;
+      color: white;
+      padding: 1rem;
+      font-size: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
+
     #chat-box {
-      flex-grow: 1; overflow-y: auto;
-      padding: 1rem; background: white;
-      display: flex; flex-direction: column;
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      background: white;
+      display: flex;
+      flex-direction: column;
     }
+
     .msg {
-      background: #e4e6eb; padding: 0.75rem;
-      margin-bottom: 0.5rem; border-radius: 12px;
-      max-width: 75%; word-wrap: break-word;
+      background: #e4e6eb;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border-radius: 12px;
+      max-width: 75%;
+      word-wrap: break-word;
     }
+
     .self {
-      background: #d1ffd6; align-self: flex-end;
+      background: #d1ffd6;
+      align-self: flex-end;
     }
+
+    .meta {
+      font-size: 0.75rem;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    #typing {
+      font-style: italic;
+      font-size: 0.9rem;
+      margin: 5px 10px;
+      color: gray;
+    }
+
     #input-area {
-      display: flex; padding: 0.75rem;
-      background: #f1f1f1; gap: 10px;
+      display: flex;
+      padding: 0.75rem;
+      background: #f1f1f1;
+      gap: 10px;
     }
+
     #msg {
-      flex: 1; padding: 0.75rem;
-      font-size: 1rem; border-radius: 20px;
-      border: 1px solid #ccc; outline: none;
+      flex: 1;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      outline: none;
     }
+
     button {
       padding: 0.75rem 1rem;
-      background: #28a745; color: white;
-      border: none; border-radius: 20px;
-      font-size: 1rem; cursor: pointer;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-size: 1rem;
+      cursor: pointer;
     }
+
     a.logout {
-      color: white; text-decoration: none; font-size: 0.9rem;
+      color: white;
+      text-decoration: none;
+      font-size: 0.9rem;
     }
+
     @media (max-width: 600px) {
       header { font-size: 1rem; padding: 0.75rem; }
       #msg, button, .msg { font-size: 0.9rem; }
@@ -56,61 +99,72 @@
   </style>
 </head>
 <body>
+<header>
+  <span>{{ username }}{% if is_admin %} [Admin]{% endif %}</span>
+  {% if is_admin %}
+  <button onclick="clearMessages()" style="background:red;color:white;border:none;border-radius:10px;padding:5px 10px;margin-left:10px;">🧹 Clear</button>
+  {% endif %}
+  <a href="/logout" class="logout">Logout</a>
+</header>
 
-  <header>
-    <span>{{ username }}{% if username|lower == 'thamizhamuthan' %} [Admin]{% endif %}</span>
-    <div style="display: flex; gap: 10px;">
-      {% if username|lower == 'thamizhamuthan' %}
-      <form action="{{ url_for('clear_messages') }}" method="post">
-        <button type="submit" style="background:red;color:white;padding:5px 10px;border:none;border-radius:5px;">
-          🧹 Clear
-        </button>
-      </form>
-      {% endif %}
-      <a href="/logout" class="logout">Logout</a>
-    </div>
-  </header>
-
-  <div id="chat-box">
-    {% for m in messages %}
-      <div class="msg">{{ m }}</div>
-    {% endfor %}
+<div id="chat-box">
+  {% for m in messages %}
+  <div class="msg {% if m.user == username %}self{% endif %}">
+    <strong>{{ m.user }}</strong>: {{ m.text }}
+    <div class="meta">{{ m.time }} | {{ m.date }}</div>
   </div>
+  {% endfor %}
+  <div id="typing"></div>
+</div>
 
-  <div id="input-area">
-    <input id="msg" type="text" placeholder="Type your message…" />
-    <button onclick="sendMessage()">➤</button>
-  </div>
+<div id="input-area">
+  <input id="msg" type="text" placeholder="Type your message…" oninput="notifyTyping()" />
+  <button onclick="sendMessage()">➤</button>
+</div>
 
-  <script>
-    const socket = io();
-    const username = "{{ username }}";
-    const chatBox = document.getElementById("chat-box");
+<script>
+  const socket = io();
+  const username = "{{ username }}";
+  const chatBox = document.getElementById("chat-box");
+  const input = document.getElementById("msg");
+  const typingDiv = document.getElementById("typing");
 
-    socket.on("message", function(msg) {
-      const div = document.createElement("div");
-      div.className = "msg";
-      if (msg.startsWith(username + " ")) {
-        div.classList.add("self");
-      }
-      div.textContent = msg;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
+  socket.on("message", function (msg) {
+    const div = document.createElement("div");
+    div.className = "msg";
+    if (msg.user === username) div.classList.add("self");
+    div.innerHTML = `<strong>${msg.user}</strong>: ${msg.text}<div class="meta">${msg.time} | ${msg.date}</div>`;
+    chatBox.appendChild(div);
+    typingDiv.innerHTML = "";
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
 
-    function sendMessage() {
-      const input = document.getElementById("msg");
-      const text = input.value.trim();
-      if (text !== "") {
-        socket.emit("message", text);
-        input.value = "";
-      }
+  function sendMessage() {
+    const text = input.value.trim();
+    if (text !== "") {
+      socket.emit("message", text);
+      input.value = "";
     }
+  }
 
-    socket.on('messages_cleared', () => {
-      chatBox.innerHTML = '';
-    });
-  </script>
+  function notifyTyping() {
+    socket.emit("typing", username);
+  }
 
+  socket.on("user_typing", function (user) {
+    if (user !== username) {
+      typingDiv.innerHTML = `${user} is typing...`;
+      setTimeout(() => typingDiv.innerHTML = "", 2000);
+    }
+  });
+
+  function clearMessages() {
+    if (confirm("Are you sure you want to clear all messages?")) {
+      fetch("/clear", { method: "POST" }).then(() => {
+        location.reload();
+      });
+    }
+  }
+</script>
 </body>
 </html>
