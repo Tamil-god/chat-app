@@ -1,9 +1,6 @@
 flask
 flask_socketio
 eventlet
-email
-pytz==2023.3
-email-validator
-requests
+
 
 
