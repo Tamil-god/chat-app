@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Do Or Die | The Group</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&family=Poppins&display=swap" rel="stylesheet" />
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: #000;
+            color: white;
+        }
+
+        /* Navbar */
+        header {
+            background: url('car.jpg') center/cover no-repeat;
+            height: 180px; /* ✅ reduced height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 40px;
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000, 0 0 20px #ff4d4d;
+        }
+
+        /* Section Container */
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding: 40px 20px;
+        }
+
+        h2 {
+            color: #ff4d4d;
+            font-size: 26px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            font-size: 17px;
+            line-height: 1.7;
+            color: #ccc;
+        }
+
+        /* Members */
+        .members {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+        }
+
+        .member-card {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 14px;
+            text-align: center;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .member-card:hover {
+            background: #1a1a1a;
+            transform: scale(1.04);
+            box-shadow: 0 0 10px #ff4d4d;
+        }
+
+        /* Colored Member Names */
+        .krishna {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        .rohith {
+            color: #ffa500;
+            font-weight: bold;
+        }
+        .sharveshan {
+            color: #ff69b4;
+            font-weight: bold;
+        }
+
+
+        /* Chat App Button */
+        .chat-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: #ff4d4d;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .chat-link:hover {
+            background: #ff0000;
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<header>
+    <h1>Do Or Die</h1>
+</header>
+
+<!-- Description -->
+<section class="container">
+    <h2>Description</h2>
+    <p>This is a private group made for fun, friendships, and free speech. We joke, help each other, and stay connected daily. From homework to heartbeats, everything is shared in this circle. It’s more than chat — it’s a vibe, a bond, and a story that we write together.</p>
+</section>
+
+<!-- Members Section -->
+<section class="container">
+    <h2>Members</h2>
+    <div class="members">
+        <div class="member-card">Vojay</div>
+        <div class="member-card">Rohith</div>
+        <div class="member-card">Sudra</div>
+        <div class="member-card">Lavanya</div>
+        <div class="member-card">Copper</div>
+        <div class="member-card">Krishna</div>
+        <div class="member-card">Sharveshan</div> <!-- ✅ New Member -->
+    </div>
+
+</section>
+
+<!-- About the Members -->
+<section class="container">
+    <h2>About the Members</h2>
+
+    <p><span class="krishna">Krishna</span> ah patha odane theriyum — avan full-time romantic mood la dhan irupan. Day & night “hanime” scenes la than immersed ah irukuran 😭. Kadhal scenes, feel songs, fantasy kadhai — ellame Krishna ku oxygen maari. Lovela avan full emotional, padathula oru scene vandha udane tears ready!</p>
+
+    <p><span class="rohith">Rohith</span> oda speech la than danger iruku da. Onnu solluvan, aaru ponnunga like panniduvanga 🤭. College la, class la, group la — flood panni ponnungala attract pannuravan. Avan smile & talk ku oru maari effect iruku. Stylish ah, chill ah irupan — playboy vibes 100% confirm!</p>
+
+    <p><span style="color:#ff69b4; font-weight:bold;">Sharveshan</span> ah? Avan oru unique combo da! Trans karuthu ah confident ah carry panni, konjam gay stylish tone um iruku. “Yaaru da naan?” nu attitude la irupaan. Group la avan laugh, pose, fashion vera level. Konjam soft, konjam spicy — antha mix thaan avan style!</p>
+</section>
+
+
+
+<!-- About the Creator -->
+<section class="container">
+    <h2>About the Creator</h2>
+    <p><strong>Copper</strong> is the one who brought this idea to life — combining creativity, leadership, and tech to give the group a voice and identity. Behind the fun, he’s the mind making it all work.</p>
+</section>
+
+<!-- Chat App Showcase -->
+<div style="text-align: center; margin-top: 40px;">
+    <a href="http://localhost:5000" target="_blank" style="text-decoration: none;">
+        <button style="
+      padding: 12px 24px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    ">
+            💬 Open Chat App
+        </button>
+    </a>
+</div>
+
+
+
+</body>
+</html>
