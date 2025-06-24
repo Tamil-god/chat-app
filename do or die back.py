@@ -6,6 +6,7 @@ import time
 from flask import request
 import base64
 import smtplib
+from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 
