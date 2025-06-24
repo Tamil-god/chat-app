@@ -2,8 +2,7 @@ from flask import Flask, render_template, request, redirect, session, url_for
 from flask_socketio import SocketIO, send
 import json, os
 from datetime import datetime
-from datetime import datetime
-import pytz
+import time
 from flask import request
 import base64
 import smtplib
@@ -121,11 +120,11 @@ def handle_message(msg):
     user = session.get('username', 'Unknown')
 
     # Set timezone to IST using pytz
-    ist = pytz.timezone('Asia/Kolkata')
-    now = datetime.now(pytz.utc).astimezone(ist)
-    time = now.strftime('%d-%m-%Y %I:%M %p')  # Example: 24-06-2025 03:32 PM
+    now = time.localtime()
+    time_str = time.strftime('%d-%m-%Y %I:%M %p', now)
 
-    full_msg = f"{user} ({time}): {msg}"
+
+    full_msg = f"{user} ({time_str}): {msg}"
 
     with open('messages.json', 'r') as f:
         data = json.load(f)
